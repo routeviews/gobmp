@@ -50,14 +50,14 @@ func parsingWorker(b []byte, producerQueue chan bmp.Message, bmpRaw bool) {
 
 		if bmpRaw {
 			if bmpMsg.PeerHeader != nil {
-				if bmpMsg.Payload, err = bmp.UnmarshalBMPRawMessage(b[m:]); err != nil {
+				var rawBmpMsg bmp.Message
+				rawBmpMsg.PeerHeader = bmpMsg.PeerHeader
+				if rawBmpMsg.Payload, err = bmp.UnmarshalBMPRawMessage(b[m:]); err != nil {
 					glog.Errorf("fail to recover BMP Raw message with error: %+v", err)
 					return
 				}
-				producerQueue <- bmpMsg
+				producerQueue <- rawBmpMsg
 			}
-			m += int(ch.MessageLength)
-			continue
 		}
 
 		switch ch.MessageType {

@@ -37,8 +37,10 @@ func (p *producer) produceStatsMessage(msg bmp.Message) {
 	m.RemoteBGPID = msg.PeerHeader.GetPeerBGPIDString()
 	for _, tlv := range StatsMsg.StatsTLV {
 		switch tlv.InformationType {
+		case 0:
+			m.RejectedPrefixes = binary.BigEndian.Uint32(tlv.Information)
 		case 1:
-			m.DuplicatePrefixs = binary.BigEndian.Uint32(tlv.Information)
+			m.DuplicatePrefixes = binary.BigEndian.Uint32(tlv.Information)
 		case 2:
 			m.DuplicateWithDraws = binary.BigEndian.Uint32(tlv.Information)
 		case 3:
@@ -57,6 +59,8 @@ func (p *producer) produceStatsMessage(msg bmp.Message) {
 			m.UpdatesAsWithdraw = binary.BigEndian.Uint32(tlv.Information)
 		case 12:
 			m.PrefixesAsWithdraw = binary.BigEndian.Uint32(tlv.Information)
+		case 65531:
+			m.ExperimentalRejectedPrefixesDueNextHop = binary.BigEndian.Uint32(tlv.Information)
 		default:
 			glog.Warningf("unprocessed stats type:%v", tlv.InformationType)
 		}

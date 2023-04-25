@@ -10,8 +10,8 @@ import (
 
 // InformationalTLV defines Informational TLV per rfc7854
 type InformationalTLV struct {
-	InformationType   int16
-	InformationLength int16
+	InformationType   uint16
+	InformationLength uint16
 	Information       []byte
 }
 
@@ -23,10 +23,10 @@ func UnmarshalTLV(b []byte) ([]InformationalTLV, error) {
 	tlvs := make([]InformationalTLV, 0)
 	for i := 0; i < len(b); {
 		// Extracting TLV type 2 bytes
-		t := int16(binary.BigEndian.Uint16(b[i : i+2]))
+		t := uint16(binary.BigEndian.Uint16(b[i : i+2]))
 		// Extracting TLV length
-		l := int16(binary.BigEndian.Uint16(b[i+2 : i+4]))
-		if l > int16(len(b)-(i+4)) {
+		l := uint16(binary.BigEndian.Uint16(b[i+2 : i+4]))
+		if l > uint16(len(b)-(i+4)) {
 			return nil, fmt.Errorf("invalid tlv length %d", l)
 		}
 		v := b[i+4 : i+4+int(l)]

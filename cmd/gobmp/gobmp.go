@@ -11,12 +11,14 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
+	"github.com/arl/statsviz"
 	"github.com/golang/glog"
 	"github.com/sbezverk/gobmp/pkg/dumper"
 	"github.com/sbezverk/gobmp/pkg/filer"
 	"github.com/sbezverk/gobmp/pkg/gobmpsrv"
 	"github.com/sbezverk/gobmp/pkg/kafka"
 	"github.com/sbezverk/gobmp/pkg/pub"
+	"github.com/sbezverk/gobmp/pkg/topic"
 	"github.com/sbezverk/tools"
 )
 
@@ -54,9 +56,10 @@ func init() {
 func main() {
 	flag.Parse()
 	_ = flag.Set("logtostderr", "true")
+	statsviz.RegisterDefault()
 	// Starting performance collecting http server
 	go func() {
-		glog.Info(http.ListenAndServe(fmt.Sprintf(":%d", perfPort), nil))
+		glog.Info(http.ListenAndServe(fmt.Sprintf("127.0.0.1:%d", perfPort), nil))
 	}()
 	// Initializing publisher
 	var publisher pub.Publisher
@@ -108,5 +111,6 @@ func main() {
 	<-stopCh
 
 	bmpSrv.Stop()
+	topic.Cleanup()
 	os.Exit(0)
 }

@@ -33,6 +33,7 @@ func parsingWorker(b []byte, producerQueue chan bmp.Message, bmpRaw bool) {
 		}
 		p := m + bmp.CommonHeaderLength
 		ph := p
+		eom := m + int(ch.MessageLength)
 		switch ch.MessageType {
 		case bmp.RouteMonitorMsg:
 			fallthrough
@@ -62,34 +63,34 @@ func parsingWorker(b []byte, producerQueue chan bmp.Message, bmpRaw bool) {
 
 		switch ch.MessageType {
 		case bmp.RouteMonitorMsg:
-			rm, err := bmp.UnmarshalBMPRouteMonitorMessage(b[p:])
+			rm, err := bmp.UnmarshalBMPRouteMonitorMessage(b[p:eom])
 			if err != nil {
 				glog.Errorf("fail to recover BMP Route Monitoring with error: %+v", err)
 				if glog.V(5) {
 					glog.Infof("common header content: %+v", ch)
 					glog.Infof("per peer header content: %s", tools.MessageHex(b[ph:p]))
-					glog.Infof("message content: %s", tools.MessageHex(b[p:m+int(ch.MessageLength)]))
+					glog.Infof("message content: %s", tools.MessageHex(b[p:eom]))
 				}
 				return
 			}
 			bmpMsg.Payload = rm
 		case bmp.StatsReportMsg:
-			if bmpMsg.Payload, err = bmp.UnmarshalBMPStatsReportMessage(b[p:]); err != nil {
+			if bmpMsg.Payload, err = bmp.UnmarshalBMPStatsReportMessage(b[p:eom]); err != nil {
 				glog.Errorf("fail to recover BMP Stats Reports message with error: %+v", err)
 				return
 			}
 		case bmp.PeerDownMsg:
-			if bmpMsg.Payload, err = bmp.UnmarshalPeerDownMessage(b[p:]); err != nil {
+			if bmpMsg.Payload, err = bmp.UnmarshalPeerDownMessage(b[p:eom]); err != nil {
 				glog.Errorf("fail to recover BMP Peer Down message with error: %+v", err)
 				return
 			}
 		case bmp.PeerUpMsg:
-			if bmpMsg.Payload, err = bmp.UnmarshalPeerUpMessage(b[p:], bmpMsg.PeerHeader.IsRemotePeerIPv6()); err != nil {
+			if bmpMsg.Payload, err = bmp.UnmarshalPeerUpMessage(b[p:eom], bmpMsg.PeerHeader.IsRemotePeerIPv6()); err != nil {
 				glog.Errorf("fail to recover BMP Peer Up message with error: %+v", err)
 				return
 			}
 		case bmp.InitiationMsg:
-			if _, err := bmp.UnmarshalInitiationMessage(b[p:]); err != nil {
+			if _, err := bmp.UnmarshalInitiationMessage(b[p:eom]); err != nil {
 				glog.Errorf("fail to recover BMP Initiation message with error: %+v", err)
 				return
 			}
@@ -104,7 +105,7 @@ func parsingWorker(b []byte, producerQueue chan bmp.Message, bmpRaw bool) {
 				glog.Infof("Content:%s", tools.MessageHex(b))
 			}
 		}
-		m += int(ch.MessageLength)
+		m = eom
 		if producerQueue != nil && bmpMsg.Payload != nil {
 			producerQueue <- bmpMsg
 		}

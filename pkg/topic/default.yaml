@@ -1,0 +1,34 @@
+---
+topics:
+        collector:         "gobmp.parsed.collector"
+        # {"router_hash":"090be5656adb17069c70a5210a986ffd","router_ip":"2001:468:d01:33::80df:23","peer_type":0,"remote_bgp_id":"128.223.253.10","remote_asn":3582,"remote_ip":"128.223.253.10","peer_rd":"0:0","timestamp":"2023-04-14T13:48:40.000714534Z"}
+        # is "remote_bgp_id" == "peer_ip" ?
+        stats:             "gobmp.parsed.statistics"   # what exactly is available for stats?
+        # {{named_router}} is available below
+        router:            "gobmp.parsed.router"
+        ## {{peer_ip} and {{peer_asn}} are available below
+        peer:              "gobmp.parsed.peer"
+        raw:               "gobmp.bmp_raw"
+        unicast_prefix:    "gobmp.parsed.unicast_prefix"
+        unicast_prefix_v4: "gobmp.parsed.unicast_prefix_v4"
+        unicast_prefix_v6: "gobmp.parsed.unicast_prefix_v6"
+        ls_node:           "gobmp.parsed.ls_node"
+        ls_link:           "gobmp.parsed.ls_link"
+        ls_prefix:         "gobmp.parsed.ls_prefix"
+        l3vpn:             "gobmp.parsed.l3vpn"
+        l3vpn_v4:          "gobmp.parsed.l3vpn_v4"
+        l3vpn_v6:          "gobmp.parsed.l3vpn_v6"
+        evpn:              "gobmp.parsed.evpn"
+        ls_srv6_sid:       "gobmp.parsed.ls_srv6_sid"
+        sr_policy:         "gobmp.parsed.sr_policy"
+        sr_policy_v4:      "gobmp.parsed.sr_policy_v4"
+        sr_policy_v6:      "gobmp.parsed.sr_policy_v6"
+        flowspec:          "gobmp.parsed.flowspec"
+        flowspec_v4:       "gobmp.parsed.flowspec_v4"
+        flowspec_v6:       "gobmp.parsed.flowspec_v6"
+
+named_routers:
+  - name: fallback
+    matches:
+      - 0.0.0.0/0
+      - ::/0

@@ -18,7 +18,7 @@ const (
 
 func (p *producer) produceRouteMonitorMessage(msg bmp.Message) {
 	if msg.PeerHeader == nil {
-		glog.Errorf("perPeerHeader is missing, cannot construct PeerStateChange message")
+		glog.Errorf("perPeerHeader is missing, cannot construct RouteMonitor message")
 		return
 	}
 	routeMonitorMsg, ok := msg.Payload.(*bmp.RouteMonitor)

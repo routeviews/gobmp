@@ -48,7 +48,7 @@ func (t *topicConfig) Update() error {
 		return errors.New("config location not set")
 	}
 
-	data, err := os.ReadFile("config.yaml")
+	data, err := os.ReadFile(t.configLocation)
 	if err != nil {
 		return err
 	}

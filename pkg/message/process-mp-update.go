@@ -53,7 +53,7 @@ func (p *producer) processMPUpdate(nlri bgp.MPNLRI, operation int, ph *bmp.PerPe
 					topicType = bmp.UnicastPrefixV6Msg
 				}
 			}
-			if err := p.marshalAndPublish(&m, topicType, []byte(m.RouterHash), false); err != nil {
+			if err := p.marshalAndPublish(&m, topicType, ph, []byte(m.RouterHash), false); err != nil {
 				glog.Errorf("failed to process Unicast Prefix message with error: %+v", err)
 				return
 			}
@@ -75,7 +75,7 @@ func (p *producer) processMPUpdate(nlri bgp.MPNLRI, operation int, ph *bmp.PerPe
 					topicType = bmp.L3VPNV6Msg
 				}
 			}
-			if err := p.marshalAndPublish(&m, topicType, []byte(m.RouterHash), false); err != nil {
+			if err := p.marshalAndPublish(&m, topicType, ph, []byte(m.RouterHash), false); err != nil {
 				glog.Errorf("failed to process L3VPN message with error: %+v", err)
 				return
 			}
@@ -87,7 +87,7 @@ func (p *producer) processMPUpdate(nlri bgp.MPNLRI, operation int, ph *bmp.PerPe
 			return
 		}
 		for _, msg := range msgs {
-			if err := p.marshalAndPublish(&msg, bmp.EVPNMsg, []byte(msg.RouterHash), false); err != nil {
+			if err := p.marshalAndPublish(&msg, bmp.EVPNMsg, ph, []byte(msg.RouterHash), false); err != nil {
 				glog.Errorf("failed to process EVPNP message with error: %+v", err)
 				return
 			}
@@ -109,7 +109,7 @@ func (p *producer) processMPUpdate(nlri bgp.MPNLRI, operation int, ph *bmp.PerPe
 					topicType = bmp.SRPolicyV6Msg
 				}
 			}
-			if err := p.marshalAndPublish(&m, topicType, []byte(m.RouterHash), false); err != nil {
+			if err := p.marshalAndPublish(&m, topicType, ph, []byte(m.RouterHash), false); err != nil {
 				glog.Errorf("failed to process SRPolicy message with error: %+v", err)
 				return
 			}
@@ -129,7 +129,7 @@ func (p *producer) processMPUpdate(nlri bgp.MPNLRI, operation int, ph *bmp.PerPe
 					topicType = bmp.FlowspecV6Msg
 				}
 			}
-			if err := p.marshalAndPublish(&m, topicType, []byte(m.SpecHash), false); err != nil {
+			if err := p.marshalAndPublish(&m, topicType, ph, []byte(m.SpecHash), false); err != nil {
 				glog.Errorf("failed to process Flowspec message with error: %+v", err)
 				return
 			}
@@ -161,7 +161,7 @@ func (p *producer) processNLRI71SubTypes(nlri bgp.MPNLRI, operation int, ph *bmp
 				glog.Errorf("failed to produce ls_node message with error: %+v", err)
 				continue
 			}
-			if err := p.marshalAndPublish(&msg, bmp.LSNodeMsg, []byte(msg.RouterHash), false); err != nil {
+			if err := p.marshalAndPublish(&msg, bmp.LSNodeMsg, ph, []byte(msg.RouterHash), false); err != nil {
 				glog.Errorf("failed to process LSNode message with error: %+v", err)
 				continue
 			}
@@ -176,7 +176,7 @@ func (p *producer) processNLRI71SubTypes(nlri bgp.MPNLRI, operation int, ph *bmp
 				glog.Errorf("failed to produce ls_link message with error: %+v", err)
 				continue
 			}
-			if err := p.marshalAndPublish(&msg, bmp.LSLinkMsg, []byte(msg.RouterHash), false); err != nil {
+			if err := p.marshalAndPublish(&msg, bmp.LSLinkMsg, ph, []byte(msg.RouterHash), false); err != nil {
 				glog.Errorf("failed to process LSLink message with error: %+v", err)
 				continue
 			}
@@ -194,7 +194,7 @@ func (p *producer) processNLRI71SubTypes(nlri bgp.MPNLRI, operation int, ph *bmp
 				glog.Errorf("failed to produce ls_prefix message with error: %+v", err)
 				continue
 			}
-			if err := p.marshalAndPublish(&msg, bmp.LSPrefixMsg, []byte(msg.RouterHash), false); err != nil {
+			if err := p.marshalAndPublish(&msg, bmp.LSPrefixMsg, ph, []byte(msg.RouterHash), false); err != nil {
 				glog.Errorf("failed to process LSPrefix message with error: %+v", err)
 				continue
 			}
@@ -209,7 +209,7 @@ func (p *producer) processNLRI71SubTypes(nlri bgp.MPNLRI, operation int, ph *bmp
 				glog.Errorf("failed to produce ls_srv6_sid message with error: %+v", err)
 				continue
 			}
-			if err := p.marshalAndPublish(&msg, bmp.LSSRv6SIDMsg, []byte(msg.RouterHash), false); err != nil {
+			if err := p.marshalAndPublish(&msg, bmp.LSSRv6SIDMsg, ph, []byte(msg.RouterHash), false); err != nil {
 				glog.Errorf("failed to process LSSRv6SID message with error: %+v", err)
 				continue
 			}

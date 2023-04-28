@@ -105,7 +105,7 @@ func (p *producer) producePeerMessage(op int, msg bmp.Message) {
 		copy(m.InfoData, peerDownMsg.Data)
 
 	}
-	if err := p.marshalAndPublish(&m, bmp.PeerStateChangeMsg, []byte(m.RouterHash), false); err != nil {
+	if err := p.marshalAndPublish(&m, bmp.PeerStateChangeMsg, msg.PeerHeader, []byte(m.RouterHash), false); err != nil {
 		glog.Errorf("failed to process peer message with error: %+v", err)
 		return
 	}

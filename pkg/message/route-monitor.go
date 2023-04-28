@@ -69,6 +69,7 @@ func (p *producer) produceRouteMonitorMessage(msg bmp.Message) {
 			}
 			msgs = append(msgs, msg...)
 		}
+		ph := msg.PeerHeader
 		msg, err := p.nlri(AddPrefix, msg.PeerHeader, routeMonitorMsg.Update)
 		if err != nil {
 			glog.Errorf("failed to produce original NLRI Withdraw message with error: %+v", err)
@@ -77,7 +78,7 @@ func (p *producer) produceRouteMonitorMessage(msg bmp.Message) {
 		msgs = append(msgs, msg...)
 		// Loop through and publish all collected messages
 		for _, m := range msgs {
-			if err := p.marshalAndPublish(&m, t, []byte(m.RouterHash), false); err != nil {
+			if err := p.marshalAndPublish(&m, t, ph, []byte(m.RouterHash), false); err != nil {
 				glog.Errorf("failed to process Unicast Prefix message with error: %+v", err)
 				return
 			}
@@ -85,7 +86,7 @@ func (p *producer) produceRouteMonitorMessage(msg bmp.Message) {
 	}
 }
 
-func (p *producer) marshalAndPublish(msg interface{}, msgType int, hash []byte, debug bool) error {
+func (p *producer) marshalAndPublish(msg interface{}, msgType int, ph *bmp.PerPeerHeader, hash []byte, debug bool) error {
 	j, err := json.Marshal(msg)
 	if err != nil {
 		return fmt.Errorf("failed to marshal a message of type %d with error: %+v", msgType, err)

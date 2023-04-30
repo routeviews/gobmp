@@ -127,14 +127,10 @@ func (p *publisher) PublishMessage(t int, vars map[string]string, key []byte, ms
 }
 
 func (p *publisher) produceMessage(topic string, key []byte, msg []byte) error {
-	k := sarama.ByteEncoder{}
-	k = key
-	m := sarama.ByteEncoder{}
-	m = msg
 	p.producer.Input() <- &sarama.ProducerMessage{
 		Topic: topic,
-		Key:   k,
-		Value: m,
+		Key:   sarama.ByteEncoder(key),
+		Value: sarama.ByteEncoder(msg),
 	}
 
 	return nil

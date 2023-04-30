@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"net"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -43,6 +44,8 @@ var (
 	topicCreateTimeout    = 1 * time.Second
 	// goBMP topic's retention timer is 15 minutes
 	topicRetention = "900000"
+	// try to re-create a given topic after 5 minutes have passed
+	topicRenew = 300.0
 )
 
 var (
@@ -73,57 +76,81 @@ var (
 )
 
 type publisher struct {
-	broker   *sarama.Broker
-	config   *sarama.Config
-	producer sarama.AsyncProducer
-	stopCh   chan struct{}
+	broker          *sarama.Broker
+	config          *sarama.Config
+	producer        sarama.AsyncProducer
+	stopCh          chan struct{}
+	topicCache      map[string]time.Time
+	topicCacheMutex sync.Mutex
+}
+
+func (p *publisher) useTopic(topicType string, vars map[string]string) (string, error) {
+	t := topicType
+	p.topicCacheMutex.Lock()
+	defer p.topicCacheMutex.Unlock()
+	if time.Since(p.topicCache[t]).Seconds() > topicRenew {
+		glog.V(5).Infof("(re)creating topic %#v\n", t)
+		if err := ensureTopic(p.broker, topicCreateTimeout, t); err != nil {
+			glog.Errorf("Kafka publisher failed to ensure topic %#v with error: %+v", t, err)
+			return "", err
+		}
+		p.topicCache[t] = time.Now()
+	}
+	return t, nil
 }
 
 func (p *publisher) PublishMessage(t int, vars map[string]string, key []byte, msg []byte) error {
+	var topicName string
+	var err error
 	switch t {
 	case bmp.BMPRawMsg:
-		return p.produceMessage(rawTopic, key, msg)
+		topicName, err = p.useTopic(rawTopic, vars)
 	case bmp.PeerStateChangeMsg:
-		return p.produceMessage(peerTopic, key, msg)
+		topicName, err = p.useTopic(peerTopic, vars)
 	case bmp.UnicastPrefixMsg:
-		return p.produceMessage(unicastMessageTopic, key, msg)
+		topicName, err = p.useTopic(unicastMessageTopic, vars)
 	case bmp.UnicastPrefixV4Msg:
-		return p.produceMessage(unicastMessageV4Topic, key, msg)
+		topicName, err = p.useTopic(unicastMessageV4Topic, vars)
 	case bmp.UnicastPrefixV6Msg:
-		return p.produceMessage(unicastMessageV6Topic, key, msg)
+		topicName, err = p.useTopic(unicastMessageV6Topic, vars)
 	case bmp.LSNodeMsg:
-		return p.produceMessage(lsNodeMessageTopic, key, msg)
+		topicName, err = p.useTopic(lsNodeMessageTopic, vars)
 	case bmp.LSLinkMsg:
-		return p.produceMessage(lsLinkMessageTopic, key, msg)
+		topicName, err = p.useTopic(lsLinkMessageTopic, vars)
 	case bmp.L3VPNMsg:
-		return p.produceMessage(l3vpnMessageTopic, key, msg)
+		topicName, err = p.useTopic(l3vpnMessageTopic, vars)
 	case bmp.L3VPNV4Msg:
-		return p.produceMessage(l3vpnMessageV4Topic, key, msg)
+		topicName, err = p.useTopic(l3vpnMessageV4Topic, vars)
 	case bmp.L3VPNV6Msg:
-		return p.produceMessage(l3vpnMessageV6Topic, key, msg)
+		topicName, err = p.useTopic(l3vpnMessageV6Topic, vars)
 	case bmp.LSPrefixMsg:
-		return p.produceMessage(lsPrefixMessageTopic, key, msg)
+		topicName, err = p.useTopic(lsPrefixMessageTopic, vars)
 	case bmp.LSSRv6SIDMsg:
-		return p.produceMessage(lsSRv6SIDMessageTopic, key, msg)
+		topicName, err = p.useTopic(lsSRv6SIDMessageTopic, vars)
 	case bmp.EVPNMsg:
-		return p.produceMessage(evpnMessageTopic, key, msg)
+		topicName, err = p.useTopic(evpnMessageTopic, vars)
 	case bmp.SRPolicyMsg:
-		return p.produceMessage(srPolicyMessageTopic, key, msg)
+		topicName, err = p.useTopic(srPolicyMessageTopic, vars)
 	case bmp.SRPolicyV4Msg:
-		return p.produceMessage(srPolicyMessageV4Topic, key, msg)
+		topicName, err = p.useTopic(srPolicyMessageV4Topic, vars)
 	case bmp.SRPolicyV6Msg:
-		return p.produceMessage(srPolicyMessageV6Topic, key, msg)
+		topicName, err = p.useTopic(srPolicyMessageV6Topic, vars)
 	case bmp.FlowspecMsg:
-		return p.produceMessage(flowspecMessageTopic, key, msg)
+		topicName, err = p.useTopic(flowspecMessageTopic, vars)
 	case bmp.FlowspecV4Msg:
-		return p.produceMessage(flowspecMessageV4Topic, key, msg)
+		topicName, err = p.useTopic(flowspecMessageV4Topic, vars)
 	case bmp.FlowspecV6Msg:
-		return p.produceMessage(flowspecMessageV6Topic, key, msg)
+		topicName, err = p.useTopic(flowspecMessageV6Topic, vars)
 	case bmp.StatsReportMsg:
-		return p.produceMessage(statsMessageTopic, key, msg)
+		topicName, err = p.useTopic(statsMessageTopic, vars)
 	}
-
-	return fmt.Errorf("not implemented")
+	if err != nil {
+		return err
+	}
+	if topicName == "" {
+		return fmt.Errorf("empty topic")
+	}
+	return p.produceMessage(topicName, key, msg)
 }
 
 func (p *publisher) produceMessage(topic string, key []byte, msg []byte) error {
@@ -165,12 +192,6 @@ func NewKafkaPublisher(kafkaSrv string) (pub.Publisher, error) {
 	}
 	glog.V(5).Infof("Connected to broker: %s id: %d\n", br.Addr(), br.ID())
 
-	for _, t := range topicNames {
-		if err := ensureTopic(br, topicCreateTimeout, t); err != nil {
-			glog.Errorf("New Kafka publisher failed to ensure requested topics with error: %+v", err)
-			return nil, err
-		}
-	}
 	producer, err := sarama.NewAsyncProducer([]string{kafkaSrv}, config)
 	if err != nil {
 		glog.Errorf("New Kafka publisher failed to start new async producer with error: %+v", err)
@@ -192,10 +213,11 @@ func NewKafkaPublisher(kafkaSrv string) (pub.Publisher, error) {
 	}(producer, stopCh)
 
 	return &publisher{
-		stopCh:   stopCh,
-		broker:   br,
-		config:   config,
-		producer: producer,
+		stopCh:     stopCh,
+		broker:     br,
+		config:     config,
+		producer:   producer,
+		topicCache: make(map[string]time.Time),
 	}, nil
 }
 

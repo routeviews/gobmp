@@ -48,33 +48,6 @@ var (
 	topicRenew = 300.0
 )
 
-var (
-	// topics defines a list of topic to initialize and connect,
-	// initialization is done as a part of NewKafkaPublisher func.
-	topicNames = []string{
-		rawTopic,
-		peerTopic,
-		unicastMessageTopic,
-		unicastMessageV4Topic,
-		unicastMessageV6Topic,
-		lsNodeMessageTopic,
-		lsLinkMessageTopic,
-		l3vpnMessageTopic,
-		l3vpnMessageV4Topic,
-		l3vpnMessageV6Topic,
-		lsPrefixMessageTopic,
-		lsSRv6SIDMessageTopic,
-		evpnMessageTopic,
-		srPolicyMessageTopic,
-		srPolicyMessageV4Topic,
-		srPolicyMessageV6Topic,
-		flowspecMessageTopic,
-		flowspecMessageV4Topic,
-		flowspecMessageV6Topic,
-		statsMessageTopic,
-	}
-)
-
 type publisher struct {
 	broker          *sarama.Broker
 	config          *sarama.Config

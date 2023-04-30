@@ -86,12 +86,20 @@ func (p *producer) produceRouteMonitorMessage(msg bmp.Message) {
 	}
 }
 
+func (p *producer) messageVars(t int, ph *bmp.PerPeerHeader) (r map[string]string) {
+	r = make(map[string]string)
+	r["router_ip"] = p.speakerIP
+	r["peer_ip"] = ph.GetPeerAddrString()
+	r["peer_asn"] = fmt.Sprint(ph.PeerAS)
+	return
+}
+
 func (p *producer) marshalAndPublish(msg interface{}, msgType int, ph *bmp.PerPeerHeader, hash []byte, debug bool) error {
 	j, err := json.Marshal(msg)
 	if err != nil {
 		return fmt.Errorf("failed to marshal a message of type %d with error: %+v", msgType, err)
 	}
-	if err := p.publisher.PublishMessage(msgType, hash, j); err != nil {
+	if err := p.publisher.PublishMessage(msgType, p.messageVars(msgType, ph), hash, j); err != nil {
 		return fmt.Errorf("failed to push a message of type %d to kafka with error: %+v", msgType, err)
 	}
 	if debug {

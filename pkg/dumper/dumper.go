@@ -17,7 +17,7 @@ type pubwriter struct {
 	output *log.Logger
 }
 
-func (p *pubwriter) PublishMessage(msgType int, msgHash []byte, msg []byte) error {
+func (p *pubwriter) PublishMessage(msgType int, msgVars map[string]string, msgHash []byte, msg []byte) error {
 	m := msgOut{
 		MsgType: msgType,
 		MsgHash: string(msgHash),

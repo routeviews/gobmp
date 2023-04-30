@@ -65,7 +65,7 @@ func main() {
 			wg.Add(1)
 			go func(msg *filer.MsgOut) {
 				defer wg.Done()
-				if err := publisher.PublishMessage(msg.Type, msg.Key, msg.Value); err != nil {
+				if err := publisher.PublishMessage(msg.Type, nil, msg.Key, msg.Value); err != nil {
 					glog.Errorf("fail to publish message type: %d message key: %s with error: %+v", msg.Type, tools.MessageHex(msg.Key), err)
 				}
 			}(msgs[e])
@@ -74,7 +74,7 @@ func main() {
 			time.Sleep(time.Second * time.Duration(delay))
 		}
 		wg.Wait()
-		glog.Infof("%3f seconds took to process %d records", time.Now().Sub(start).Seconds(), records)
+		glog.Infof("%3f seconds took to process %d records", time.Since(start).Seconds(), records)
 		records = 0
 	}
 

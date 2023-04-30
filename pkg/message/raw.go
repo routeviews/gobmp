@@ -25,7 +25,7 @@ func (p *producer) produceRawMessage(msg bmp.Message) {
 		msg.PeerHeader.GetPeerAddrString(), len(rm.Msg)))
 	out = append(out, rm.Msg...)
 
-	if err := p.publisher.PublishMessage(bmp.BMPRawMsg, []byte(msg.PeerHeader.GetPeerHash()), out); err != nil {
+	if err := p.publisher.PublishMessage(bmp.BMPRawMsg, p.messageVars(bmp.BMPRawMsg, msg.PeerHeader), []byte(msg.PeerHeader.GetPeerHash()), out); err != nil {
 		glog.Errorf("failed to publish a raw BMP message to kafka with error: %+v", err)
 		return
 	}

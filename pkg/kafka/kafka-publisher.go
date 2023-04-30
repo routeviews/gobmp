@@ -79,7 +79,7 @@ type publisher struct {
 	stopCh   chan struct{}
 }
 
-func (p *publisher) PublishMessage(t int, key []byte, msg []byte) error {
+func (p *publisher) PublishMessage(t int, vars map[string]string, key []byte, msg []byte) error {
 	switch t {
 	case bmp.BMPRawMsg:
 		return p.produceMessage(rawTopic, key, msg)

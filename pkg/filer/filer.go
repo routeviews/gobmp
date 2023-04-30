@@ -18,7 +18,7 @@ type pubfiler struct {
 	file *os.File
 }
 
-func (p *pubfiler) PublishMessage(msgType int, msgHash []byte, msg []byte) error {
+func (p *pubfiler) PublishMessage(msgType int, msgVars map[string]string, msgHash []byte, msg []byte) error {
 	m := MsgOut{
 		Type:  msgType,
 		Key:   msgHash,

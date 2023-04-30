@@ -5,6 +5,6 @@ package pub
 // MsgHash optionally defines the key to use by the backend when storing message
 // msg is json marshaled message of msgType
 type Publisher interface {
-	PublishMessage(msgType int, msgHash []byte, msg []byte) error
+	PublishMessage(msgType int, msgVars map[string]string, msgHash []byte, msg []byte) error
 	Stop()
 }

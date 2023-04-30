@@ -114,6 +114,7 @@ func (srv *bmpServer) bmpWorker(client net.Conn) {
 				return
 			}
 		}
+		// XXX throttle point?
 		parserQueue <- fullMsg
 	}
 }

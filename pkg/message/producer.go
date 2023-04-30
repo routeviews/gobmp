@@ -34,6 +34,7 @@ func (p *producer) Producer(queue chan bmp.Message, stop chan struct{}) {
 	for {
 		select {
 		case msg := <-queue:
+			// XXX throttle point?
 			go p.producingWorker(msg)
 		case <-stop:
 			glog.Infof("received interrupt, stopping.")

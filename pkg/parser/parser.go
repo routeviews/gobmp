@@ -11,6 +11,7 @@ func Parser(queue chan []byte, producerQueue chan bmp.Message, stop chan struct{
 	for {
 		select {
 		case msg := <-queue:
+			// XXX throttle point?
 			go parsingWorker(msg, producerQueue, bmpRaw)
 		case <-stop:
 			glog.Infof("received interrupt, stopping.")
@@ -57,6 +58,7 @@ func parsingWorker(b []byte, producerQueue chan bmp.Message, bmpRaw bool) {
 					glog.Errorf("fail to recover BMP Raw message with error: %+v", err)
 					return
 				}
+				// XXX throttle point?
 				producerQueue <- rawBmpMsg
 			}
 		}
@@ -107,6 +109,7 @@ func parsingWorker(b []byte, producerQueue chan bmp.Message, bmpRaw bool) {
 		}
 		m = eom
 		if producerQueue != nil && bmpMsg.Payload != nil {
+			// XXX throttle point?
 			producerQueue <- bmpMsg
 		}
 	}

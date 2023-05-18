@@ -13,30 +13,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/sbezverk/gobmp/pkg/bmp"
 	"github.com/sbezverk/gobmp/pkg/pub"
-)
-
-// Define constants for each topic name
-const (
-	rawTopic               = "gobmp.bmp_raw"
-	peerTopic              = "gobmp.parsed.peer"
-	unicastMessageTopic    = "gobmp.parsed.unicast_prefix"
-	unicastMessageV4Topic  = "gobmp.parsed.unicast_prefix_v4"
-	unicastMessageV6Topic  = "gobmp.parsed.unicast_prefix_v6"
-	lsNodeMessageTopic     = "gobmp.parsed.ls_node"
-	lsLinkMessageTopic     = "gobmp.parsed.ls_link"
-	l3vpnMessageTopic      = "gobmp.parsed.l3vpn"
-	l3vpnMessageV4Topic    = "gobmp.parsed.l3vpn_v4"
-	l3vpnMessageV6Topic    = "gobmp.parsed.l3vpn_v6"
-	lsPrefixMessageTopic   = "gobmp.parsed.ls_prefix"
-	lsSRv6SIDMessageTopic  = "gobmp.parsed.ls_srv6_sid"
-	evpnMessageTopic       = "gobmp.parsed.evpn"
-	srPolicyMessageTopic   = "gobmp.parsed.sr_policy"
-	srPolicyMessageV4Topic = "gobmp.parsed.sr_policy_v4"
-	srPolicyMessageV6Topic = "gobmp.parsed.sr_policy_v6"
-	flowspecMessageTopic   = "gobmp.parsed.flowspec"
-	flowspecMessageV4Topic = "gobmp.parsed.flowspec_v4"
-	flowspecMessageV6Topic = "gobmp.parsed.flowspec_v6"
-	statsMessageTopic      = "gobmp.parsed.statistics"
+	"github.com/sbezverk/gobmp/pkg/topic"
 )
 
 var (
@@ -53,22 +30,28 @@ type publisher struct {
 	config          *sarama.Config
 	producer        sarama.AsyncProducer
 	stopCh          chan struct{}
-	topicCache      map[string]time.Time
+	topicCacheSeen  map[string]time.Time
+	topicCacheUses  map[string]uint64
 	topicCacheMutex sync.Mutex
 }
 
 func (p *publisher) useTopic(topicType string, vars map[string]string) (string, error) {
-	t := topicType
+	t := topic.GetTopic(topicType, vars)
+	if t == "" {
+		return t, nil
+	}
 	p.topicCacheMutex.Lock()
 	defer p.topicCacheMutex.Unlock()
-	if time.Since(p.topicCache[t]).Seconds() > topicRenew {
-		glog.V(5).Infof("(re)creating topic %#v\n", t)
+	if time.Since(p.topicCacheSeen[t]).Seconds() > topicRenew {
+		glog.V(5).Infof("(re)creating topic %#v (%v uses since last)\n", t, p.topicCacheUses[t])
 		if err := ensureTopic(p.broker, topicCreateTimeout, t); err != nil {
 			glog.Errorf("Kafka publisher failed to ensure topic %#v with error: %+v", t, err)
 			return "", err
 		}
-		p.topicCache[t] = time.Now()
+		p.topicCacheSeen[t] = time.Now()
+		p.topicCacheUses[t] = 0
 	}
+	p.topicCacheUses[t]++
 	return t, nil
 }
 
@@ -77,51 +60,52 @@ func (p *publisher) PublishMessage(t int, vars map[string]string, key []byte, ms
 	var err error
 	switch t {
 	case bmp.BMPRawMsg:
-		topicName, err = p.useTopic(rawTopic, vars)
+		topicName, err = p.useTopic("raw", vars)
 	case bmp.PeerStateChangeMsg:
-		topicName, err = p.useTopic(peerTopic, vars)
+		topicName, err = p.useTopic("peer", vars)
 	case bmp.UnicastPrefixMsg:
-		topicName, err = p.useTopic(unicastMessageTopic, vars)
+		topicName, err = p.useTopic("unicast_prefix", vars)
 	case bmp.UnicastPrefixV4Msg:
-		topicName, err = p.useTopic(unicastMessageV4Topic, vars)
+		topicName, err = p.useTopic("unicast_prefix_v4", vars)
 	case bmp.UnicastPrefixV6Msg:
-		topicName, err = p.useTopic(unicastMessageV6Topic, vars)
+		topicName, err = p.useTopic("unicast_prefix_v6", vars)
 	case bmp.LSNodeMsg:
-		topicName, err = p.useTopic(lsNodeMessageTopic, vars)
+		topicName, err = p.useTopic("ls_node", vars)
 	case bmp.LSLinkMsg:
-		topicName, err = p.useTopic(lsLinkMessageTopic, vars)
+		topicName, err = p.useTopic("ls_link", vars)
 	case bmp.L3VPNMsg:
-		topicName, err = p.useTopic(l3vpnMessageTopic, vars)
+		topicName, err = p.useTopic("l3vpn", vars)
 	case bmp.L3VPNV4Msg:
-		topicName, err = p.useTopic(l3vpnMessageV4Topic, vars)
+		topicName, err = p.useTopic("l3vpn_v4", vars)
 	case bmp.L3VPNV6Msg:
-		topicName, err = p.useTopic(l3vpnMessageV6Topic, vars)
+		topicName, err = p.useTopic("l3vpn_v6", vars)
 	case bmp.LSPrefixMsg:
-		topicName, err = p.useTopic(lsPrefixMessageTopic, vars)
+		topicName, err = p.useTopic("ls_prefix", vars)
 	case bmp.LSSRv6SIDMsg:
-		topicName, err = p.useTopic(lsSRv6SIDMessageTopic, vars)
+		topicName, err = p.useTopic("ls_srv6_sid", vars)
 	case bmp.EVPNMsg:
-		topicName, err = p.useTopic(evpnMessageTopic, vars)
+		topicName, err = p.useTopic("evpn", vars)
 	case bmp.SRPolicyMsg:
-		topicName, err = p.useTopic(srPolicyMessageTopic, vars)
+		topicName, err = p.useTopic("sr_policy", vars)
 	case bmp.SRPolicyV4Msg:
-		topicName, err = p.useTopic(srPolicyMessageV4Topic, vars)
+		topicName, err = p.useTopic("sr_policy_v4", vars)
 	case bmp.SRPolicyV6Msg:
-		topicName, err = p.useTopic(srPolicyMessageV6Topic, vars)
+		topicName, err = p.useTopic("sr_policy_v6", vars)
 	case bmp.FlowspecMsg:
-		topicName, err = p.useTopic(flowspecMessageTopic, vars)
+		topicName, err = p.useTopic("flowspec", vars)
 	case bmp.FlowspecV4Msg:
-		topicName, err = p.useTopic(flowspecMessageV4Topic, vars)
+		topicName, err = p.useTopic("flowspec_v4", vars)
 	case bmp.FlowspecV6Msg:
-		topicName, err = p.useTopic(flowspecMessageV6Topic, vars)
+		topicName, err = p.useTopic("flowspec_v6", vars)
 	case bmp.StatsReportMsg:
-		topicName, err = p.useTopic(statsMessageTopic, vars)
+		topicName, err = p.useTopic("stats", vars)
 	}
 	if err != nil {
 		return err
 	}
+	// don't produce anything if topicName is empty
 	if topicName == "" {
-		return fmt.Errorf("empty topic")
+		return nil
 	}
 	return p.produceMessage(topicName, key, msg)
 }
@@ -186,11 +170,12 @@ func NewKafkaPublisher(kafkaSrv string) (pub.Publisher, error) {
 	}(producer, stopCh)
 
 	return &publisher{
-		stopCh:     stopCh,
-		broker:     br,
-		config:     config,
-		producer:   producer,
-		topicCache: make(map[string]time.Time),
+		stopCh:         stopCh,
+		broker:         br,
+		config:         config,
+		producer:       producer,
+		topicCacheSeen: make(map[string]time.Time),
+		topicCacheUses: make(map[string]uint64),
 	}, nil
 }
 

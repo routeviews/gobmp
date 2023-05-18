@@ -16,14 +16,12 @@ type routerConfig struct {
 }
 
 type topicConfig struct {
-	mu                sync.Mutex
-	hup               chan os.Signal
-	bye               chan int
-	configLocation    string
-	collectorTemplate string
-	routerTemplate    string
-	rawTemplate       string
-	routers           []routerConfig
+	mu             sync.Mutex
+	hup            chan os.Signal
+	bye            chan int
+	configLocation string
+	topicTemplate  map[string]string
+	routers        []routerConfig
 }
 
 func (t *topicConfig) GetNamedRouter(a netip.Addr) (string, error) {
@@ -71,9 +69,7 @@ func (t *topicConfig) UpdateData(data []byte) error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
-	t.collectorTemplate = y.CollectorTemplate
-	t.routerTemplate = y.RouterTemplate
-	t.rawTemplate = y.RawTemplate
+	t.topicTemplate = y.Topics
 	t.routers = make([]routerConfig, len(y.Routers))
 	for i, r := range y.Routers {
 		t.routers[i].Name = r.Name

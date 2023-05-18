@@ -1,12 +1,14 @@
 ---
 topics:
-        collector:         "gobmp.parsed.collector"
-        # {"router_hash":"090be5656adb17069c70a5210a986ffd","router_ip":"2001:468:d01:33::80df:23","peer_type":0,"remote_bgp_id":"128.223.253.10","remote_asn":3582,"remote_ip":"128.223.253.10","peer_rd":"0:0","timestamp":"2023-04-14T13:48:40.000714534Z"}
-        # is "remote_bgp_id" == "peer_ip" ?
-        stats:             "gobmp.parsed.statistics"   # what exactly is available for stats?
-        # {{named_router}} is available below
-        router:            "gobmp.parsed.router"
-        ## {{peer_ip} and {{peer_asn}} are available below
+        # Presently gobmp does not generate messages of these types:
+        # collector:         "gobmp.parsed.collector"
+        # router:            "gobmp.parsed.router"
+        #
+        # Topics below can use the following variable in their names:
+        #   {{router_ip}}, {{named_router}}, {{peer_ip} and {{peer_asn}}
+        # {{named_router}} specifically is determined via the "named_routers" section
+        # (see below)
+        stats:             "gobmp.parsed.statistics"
         peer:              "gobmp.parsed.peer"
         raw:               "gobmp.bmp_raw"
         unicast_prefix:    "gobmp.parsed.unicast_prefix"

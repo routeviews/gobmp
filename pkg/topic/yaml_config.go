@@ -25,10 +25,8 @@ func (p *configPrefix) UnmarshalText(text []byte) error {
 }
 
 type YAMLConfiguration struct {
-	CollectorTemplate string `yaml:"collector"`
-	RouterTemplate    string `yaml:"router"`
-	RawTemplate       string `yaml:"bmp_raw"`
-	Routers           []struct {
+	Topics  map[string]string `yaml:"topics"`
+	Routers []struct {
 		Name    string         `yaml:"name"`
 		Matches []configPrefix `yaml:"matches"`
 	} `yaml:"named_routers"`

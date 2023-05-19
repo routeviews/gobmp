@@ -6,13 +6,22 @@ import (
 	"github.com/sbezverk/tools"
 )
 
+// PARSER_CONCURRENCY limits the number of parsing workers per parser.
+// Any reasonably large value will do to effectively avoid unbound resource usage.
+const ParserConcurrency = 512
+
 // Parser dispatches workers upon request received from the channel
 func Parser(queue chan []byte, producerQueue chan bmp.Message, stop chan struct{}, bmpRaw bool) {
+	funnel := make(chan int, ParserConcurrency)
 	for {
 		select {
 		case msg := <-queue:
 			// XXX throttle point?
-			go parsingWorker(msg, producerQueue, bmpRaw)
+			funnel <- 1
+			go func() {
+				parsingWorker(msg, producerQueue, bmpRaw)
+				<-funnel
+			}()
 		case <-stop:
 			glog.Infof("received interrupt, stopping.")
 			return

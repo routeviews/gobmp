@@ -6,7 +6,7 @@ import (
 	"github.com/sbezverk/tools"
 )
 
-// PARSER_CONCURRENCY limits the number of parsing workers per parser.
+// ParserConcurrency limits the number of parsing workers per parser.
 // Any reasonably large value will do to effectively avoid unbound resource usage.
 const ParserConcurrency = 512
 

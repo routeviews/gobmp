@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"runtime"
 	"strconv"
 	"strings"
 
@@ -13,6 +12,7 @@ import (
 
 	"github.com/arl/statsviz"
 	"github.com/golang/glog"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sbezverk/gobmp/pkg/dumper"
 	"github.com/sbezverk/gobmp/pkg/filer"
 	"github.com/sbezverk/gobmp/pkg/gobmpsrv"
@@ -37,17 +37,17 @@ var (
 )
 
 func init() {
-	runtime.GOMAXPROCS(2)
+	// runtime.GOMAXPROCS(2)
 	flag.IntVar(&srcPort, "source-port", 5000, "port exposed to outside")
 	flag.IntVar(&dstPort, "destination-port", 5050, "port openBMP is listening")
 	flag.StringVar(&kafkaSrv, "kafka-server", "", "URL to access Kafka server")
 	flag.StringVar(&topicConfig, "topic-config", "", "Kafka topics configuration file")
 	flag.BoolVar(&bmpRaw, "bmp-raw", false, "also publish BMP RAW messages")
-	flag.StringVar(&intercept, "intercept", "false", "When intercept set \"true\", all incomming BMP messges will be copied to TCP port specified by destination-port, otherwise received BMP messages will be published to Kafka.")
+	flag.StringVar(&intercept, "intercept", "false", "When intercept set \"true\", all incoming BMP messages will be copied to TCP port specified by destination-port, otherwise received BMP messages will be published to Kafka.")
 	flag.StringVar(&splitAF, "split-af", "true", "When set \"true\" (default) ipv4 and ipv6 will be published in separate topics. if set \"false\" the same topic will be used for both address families.")
 	flag.IntVar(&perfPort, "performance-port", 56767, "port used for performance debugging")
 	flag.StringVar(&dump, "dump", "", "Dump resulting messages to file when \"dump=file\" or to the standard output when \"dump=console\"")
-	flag.StringVar(&file, "msg-file", "/tmp/messages.json", "Full path anf file name to store messages when \"dump=file\"")
+	flag.StringVar(&file, "msg-file", "/tmp/messages.json", "Full path and file name to store messages when \"dump=file\"")
 	hostname, err := os.Hostname()
 	if err != nil {
 		hostname = "dummy"
@@ -68,10 +68,18 @@ func main() {
 		}
 	}
 
-	statsviz.RegisterDefault()
+	mux := http.NewServeMux()
+	statsviz.Register(mux)
+	mux.Handle("/metrics", promhttp.Handler())
+	glog.Infof("Prometheus metrics at http://127.0.0.1:%d/metrics", perfPort)
+	glog.Infof("  Statsviz metrics at http://127.0.0.1:%d/debug/statsviz", perfPort)
+
 	// Starting performance collecting http server
 	go func() {
-		glog.Info(http.ListenAndServe(fmt.Sprintf("127.0.0.1:%d", perfPort), nil))
+		err := http.ListenAndServe(fmt.Sprintf("127.0.0.1:%d", perfPort), mux)
+		if err != nil && err != http.ErrServerClosed {
+			glog.Errorf("HTTP listen and serve: %v", err)
+		}
 	}()
 	// Initializing publisher
 	var publisher pub.Publisher
@@ -83,7 +91,7 @@ func main() {
 			glog.Errorf("failed to initialize file publisher with error: %+v", err)
 			os.Exit(1)
 		}
-		glog.V(5).Infof("file publisher has been successfully initialized.")
+		glog.V(5).Info("file publisher has been successfully initialized.")
 	case "console":
 		publisher, err = dumper.NewDumper()
 		if err != nil {

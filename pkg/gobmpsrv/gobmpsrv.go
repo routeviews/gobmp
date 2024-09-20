@@ -8,6 +8,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/sbezverk/gobmp/pkg/bmp"
 	"github.com/sbezverk/gobmp/pkg/message"
+	"github.com/sbezverk/gobmp/pkg/metrics"
 	"github.com/sbezverk/gobmp/pkg/parser"
 	"github.com/sbezverk/gobmp/pkg/pub"
 )
@@ -57,6 +58,8 @@ func (srv *bmpServer) server() {
 }
 
 func (srv *bmpServer) bmpWorker(client net.Conn) {
+	metrics.Metrics.BMPConnections.WithLabelValues(client.RemoteAddr().String()).Inc()
+	defer metrics.Metrics.BMPConnections.WithLabelValues(client.RemoteAddr().String()).Dec()
 	defer client.Close()
 	var server net.Conn
 	var err error

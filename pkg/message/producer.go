@@ -6,6 +6,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/sbezverk/gobmp/pkg/bmp"
+	"github.com/sbezverk/gobmp/pkg/metrics"
 	"github.com/sbezverk/gobmp/pkg/pub"
 )
 
@@ -31,6 +32,9 @@ type producer struct {
 
 // Producer dispatches kafka workers upon request received from the channel
 func (p *producer) Producer(queue chan bmp.Message, stop chan struct{}) {
+	metrics.Metrics.GoroutineProducers.Inc()
+	defer metrics.Metrics.GoroutineProducers.Dec()
+
 	for {
 		select {
 		case msg := <-queue:
@@ -44,6 +48,9 @@ func (p *producer) Producer(queue chan bmp.Message, stop chan struct{}) {
 }
 
 func (p *producer) producingWorker(msg bmp.Message) {
+	metrics.Metrics.GoroutineProducingWorkers.Inc()
+	defer metrics.Metrics.GoroutineProducingWorkers.Dec()
+
 	switch obj := msg.Payload.(type) {
 	case *bmp.PeerUpMessage:
 		p.producePeerMessage(peerUP, msg)

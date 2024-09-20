@@ -9,7 +9,9 @@ type IncrementorDecrementor interface {
 }
 
 var Metrics struct {
-	BMPConnections *prometheus.GaugeVec
+	BMPConnections            *prometheus.GaugeVec
+	GoroutineProducers        prometheus.Gauge
+	GoroutineProducingWorkers prometheus.Gauge
 }
 
 func init() {
@@ -17,6 +19,16 @@ func init() {
 		Name: "gobmp_bmp_connections",
 		Help: "BMP client connections",
 	}, []string{"client"})
+
+	Metrics.GoroutineProducers = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "gobmp_goroutine_producers",
+		Help: "Producer goroutines",
+	})
+
+	Metrics.GoroutineProducingWorkers = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "gobmp_goroutine_producing_workers",
+		Help: "Producing worker goroutines",
+	})
 
 	//	Metrics.UPDPConnAnnouncementsReceived = promauto.NewCounterVec(prometheus.CounterOpts{
 	//	        Name: "gorib_announcements_received",

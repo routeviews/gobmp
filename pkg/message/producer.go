@@ -15,6 +15,8 @@ const (
 	peerDown
 )
 
+const ProducerConcurrency = 512
+
 // Producer defines methods to act as a message producer
 type Producer interface {
 	Producer(queue chan bmp.Message, stop chan struct{})
@@ -35,11 +37,16 @@ func (p *producer) Producer(queue chan bmp.Message, stop chan struct{}) {
 	metrics.Metrics.GoroutineProducers.Inc()
 	defer metrics.Metrics.GoroutineProducers.Dec()
 
+	funnel := make(chan int, ProducerConcurrency)
 	for {
 		select {
 		case msg := <-queue:
 			// XXX throttle point?
-			go p.producingWorker(msg)
+			funnel <- 1
+			go func() {
+				p.producingWorker(msg)
+				<-funnel
+			}()
 		case <-stop:
 			glog.Infof("received interrupt, stopping.")
 			return

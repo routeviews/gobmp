@@ -122,7 +122,7 @@ type SRCandidatePathState struct {
 	Preference uint32 `json:"preference"`
 }
 
-//UnmarshalSRCandidatePathState instantiates SR Candidate Path State object from a slice of bytes
+// UnmarshalSRCandidatePathState instantiates SR Candidate Path State object from a slice of bytes
 func UnmarshalSRCandidatePathState(b []byte) (*SRCandidatePathState, error) {
 	if glog.V(6) {
 		glog.Infof("SR Candidate Path State TLV Raw: %s", tools.MessageHex(b))
